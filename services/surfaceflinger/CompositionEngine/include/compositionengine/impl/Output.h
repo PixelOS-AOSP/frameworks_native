@@ -84,7 +84,9 @@ public:
     void setReleasedLayers(ReleasedLayers&&) override;
 
     void prepare(const CompositionRefreshArgs&, LayerFESet&) override;
-    void present(const CompositionRefreshArgs&) override;
+    ftl::Future<std::monostate> present(const CompositionRefreshArgs&) override;
+    bool supportsOffloadPresent() const override { return false; }
+    void offloadPresentNextFrame() override;
 
     void uncacheBuffers(const std::vector<uint64_t>& bufferIdsToUncache) override;
     void rebuildLayerStacks(const CompositionRefreshArgs&, LayerFESet&) override;
@@ -106,7 +108,7 @@ public:
     std::optional<base::unique_fd> composeSurfaces(const Region&,
                                                    std::shared_ptr<renderengine::ExternalTexture>,
                                                    base::unique_fd&) override;
-    void postFramebuffer() override;
+    void presentFrameAndReleaseLayers() override;
     void renderCachedSets(const CompositionRefreshArgs&) override;
     void cacheClientCompositionRequests(uint32_t) override;
     bool canPredictCompositionStrategy(const CompositionRefreshArgs&) override;
@@ -129,6 +131,7 @@ public:
     virtual std::future<bool> chooseCompositionStrategyAsync(
             std::optional<android::HWComposer::DeviceRequestedChanges>*);
     virtual void resetCompositionStrategy();
+    virtual ftl::Future<std::monostate> presentFrameAndReleaseLayersAsync();
 
 protected:
     std::unique_ptr<compositionengine::OutputLayer> createOutputLayer(const sp<LayerFE>&) const;
@@ -141,8 +144,9 @@ protected:
     };
     void applyCompositionStrategy(const std::optional<DeviceRequestedChanges>&) override{};
     bool getSkipColorTransform() const override;
-    compositionengine::Output::FrameFences presentAndGetFrameFences() override;
-    virtual renderengine::DisplaySettings generateClientCompositionDisplaySettings() const;
+    compositionengine::Output::FrameFences presentFrame() override;
+    virtual renderengine::DisplaySettings generateClientCompositionDisplaySettings(
+            const std::shared_ptr<renderengine::ExternalTexture>& buffer) const;
     std::vector<LayerFE::LayerSettings> generateClientCompositionRequests(
             bool supportsProtectedContent, ui::Dataspace outputDataspace,
             std::vector<LayerFE*>& outLayerFEs) override;
@@ -176,6 +180,8 @@ private:
     ui::Dataspace getBestDataspace(ui::Dataspace*, bool*) const;
     compositionengine::Output::ColorProfile pickColorProfile(
             const compositionengine::CompositionRefreshArgs&) const;
+    void updateHwcAsyncWorker();
+    float getHdrSdrRatio(const std::shared_ptr<renderengine::ExternalTexture>& buffer) const;
 
     std::string mName;
     std::string mNamePlusId;
@@ -188,6 +194,9 @@ private:
     std::unique_ptr<ClientCompositionRequestCache> mClientCompositionRequestCache;
     std::unique_ptr<planner::Planner> mPlanner;
     std::unique_ptr<HwcAsyncWorker> mHwComposerAsyncWorker;
+
+    bool mPredictCompositionStrategy = false;
+    bool mOffloadPresent = false;
 
     // Whether the content must be recomposed this frame.
     bool mMustRecompose = false;
