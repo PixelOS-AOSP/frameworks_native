@@ -56,7 +56,6 @@ public:
     nsecs_t refreshStartTime = 0;
     nsecs_t dequeueReadyTime = 0;
     uint64_t frameNumber = 0;
-    uint64_t previousFrameNumber = 0;
     ReleaseCallbackId previousReleaseCallbackId = ReleaseCallbackId::INVALID_ID;
 };
 

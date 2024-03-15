@@ -158,7 +158,7 @@ status_t TransactionCallbackInvoker::addCallbackHandle(const sp<CallbackHandle>&
         handle->previousReleaseFence = prevFence;
         handle->previousReleaseFences.clear();
 
-        FrameEventHistoryStats eventStats(handle->frameNumber, handle->previousFrameNumber,
+        FrameEventHistoryStats eventStats(handle->frameNumber,
                                           handle->gpuCompositionDoneFence->getSnapshot().fence,
                                           handle->compositorTiming, handle->refreshStartTime,
                                           handle->dequeueReadyTime);

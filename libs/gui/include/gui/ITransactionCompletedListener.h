@@ -95,18 +95,15 @@ public:
     status_t readFromParcel(const Parcel* input) override;
 
     FrameEventHistoryStats() = default;
-    FrameEventHistoryStats(uint64_t frameNumber, uint64_t previousFrameNumber,
-                           const sp<Fence>& gpuCompFence, CompositorTiming compTiming,
+    FrameEventHistoryStats(uint64_t fn, const sp<Fence>& gpuCompFence, CompositorTiming compTiming,
                            nsecs_t refreshTime, nsecs_t dequeueReadyTime)
-          : frameNumber(frameNumber),
-            previousFrameNumber(previousFrameNumber),
+          : frameNumber(fn),
             gpuCompositionDoneFence(gpuCompFence),
             compositorTiming(compTiming),
             refreshStartTime(refreshTime),
             dequeueReadyTime(dequeueReadyTime) {}
 
     uint64_t frameNumber;
-    uint64_t previousFrameNumber;
     sp<Fence> gpuCompositionDoneFence;
     CompositorTiming compositorTiming;
     nsecs_t refreshStartTime;

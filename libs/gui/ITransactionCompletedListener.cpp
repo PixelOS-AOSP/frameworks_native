@@ -49,9 +49,6 @@ status_t FrameEventHistoryStats::writeToParcel(Parcel* output) const {
     status_t err = output->writeUint64(frameNumber);
     if (err != NO_ERROR) return err;
 
-    err = output->writeUint64(previousFrameNumber);
-    if (err != NO_ERROR) return err;
-
     if (gpuCompositionDoneFence) {
         err = output->writeBool(true);
         if (err != NO_ERROR) return err;
@@ -80,9 +77,6 @@ status_t FrameEventHistoryStats::writeToParcel(Parcel* output) const {
 
 status_t FrameEventHistoryStats::readFromParcel(const Parcel* input) {
     status_t err = input->readUint64(&frameNumber);
-    if (err != NO_ERROR) return err;
-
-    err = input->readUint64(&previousFrameNumber);
     if (err != NO_ERROR) return err;
 
     bool hasFence = false;
