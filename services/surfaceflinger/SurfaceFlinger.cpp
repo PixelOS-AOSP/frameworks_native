@@ -495,6 +495,10 @@ SurfaceFlinger::SurfaceFlinger(Factory& factory) : SurfaceFlinger(factory, SkipI
 
     mDebugFlashDelay = base::GetUintProperty("debug.sf.showupdates"s, 0u);
 
+    property_get("debug.sf.disable_backpressure", value, "0");
+    mPropagateBackpressure = !atoi(value);
+    ALOGI_IF(!mPropagateBackpressure, "Disabling backpressure propagation");
+
     mBackpressureGpuComposition = base::GetBoolProperty("debug.sf.enable_gl_backpressure"s, true);
     ALOGI_IF(mBackpressureGpuComposition, "Enabling backpressure for GPU composition");
 
@@ -659,10 +663,8 @@ void SurfaceFlinger::enableHalVirtualDisplays(bool enable) {
 }
 
 VirtualDisplayId SurfaceFlinger::acquireVirtualDisplay(ui::Size resolution, ui::PixelFormat format,
-                                                       const std::string& uniqueId,
-                                                       bool canAllocateHwcForVDS) {
-    auto& generator = mVirtualDisplayIdGenerators.hal;
-    if (canAllocateHwcForVDS && generator) {
+                                                       const std::string& uniqueId) {
+    if (auto& generator = mVirtualDisplayIdGenerators.hal) {
         if (const auto id = generator->generateId()) {
             if (getHwComposer().allocateVirtualDisplay(*id, resolution, &format)) {
                 acquireVirtualDisplaySnapshot(*id, uniqueId);
@@ -921,7 +923,7 @@ void SurfaceFlinger::init() FTL_FAKE_GUARD(kMainThreadContext) {
             std::min(getRenderEngine().getMaxTextureSize(), getRenderEngine().getMaxViewportDims());
 
     // Set SF main policy after initializing RenderEngine which has its own policy.
-    if (!SetTaskProfiles(0, {"SFMainPolicy"})) {
+    if (!SetTaskProfiles(0, {"SFMainPolicyOverride"})) {
         ALOGW("Failed to set main task profile");
     }
 
@@ -2675,7 +2677,7 @@ bool SurfaceFlinger::commit(PhysicalDisplayId pacesetterId,
     }
 
     if (pacesetterFrameTarget.wouldBackpressureHwc()) {
-        if (mBackpressureGpuComposition || pacesetterFrameTarget.didMissHwcFrame()) {
+        if (mPropagateBackpressure && (mBackpressureGpuComposition || pacesetterFrameTarget.didMissHwcFrame())) {
             if (FlagManager::getInstance().vrr_config()) {
                 mScheduler->getVsyncSchedule()->getTracker().onFrameMissed(
                         pacesetterFrameTarget.expectedPresentTime());
@@ -3852,8 +3854,7 @@ void SurfaceFlinger::processDisplayAdded(const wp<IBinder>& displayToken,
     if (const auto& physical = state.physical) {
         builder.setId(physical->id);
     } else {
-        builder.setId(acquireVirtualDisplay(resolution, pixelFormat, state.uniqueId,
-                canAllocateHwcForVDS));
+        builder.setId(acquireVirtualDisplay(resolution, pixelFormat, state.uniqueId));
     }
 
     builder.setPixels(resolution);
@@ -4481,6 +4482,9 @@ void SurfaceFlinger::initScheduler(const sp<const DisplayDevice>& display) {
     }
     if (mBackpressureGpuComposition) {
         features |= Feature::kBackpressureGpuComposition;
+    }
+    if (mPropagateBackpressure) {
+        features |= Feature::kPropagateBackpressure;
     }
     if (getHwComposer().getComposer()->isSupported(
                 Hwc2::Composer::OptionalFeature::ExpectedPresentTime)) {

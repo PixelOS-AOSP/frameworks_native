@@ -1078,8 +1078,7 @@ private:
     void enableHalVirtualDisplays(bool);
 
     // Virtual display lifecycle for ID generation and HAL allocation.
-    VirtualDisplayId acquireVirtualDisplay(ui::Size, ui::PixelFormat, const std::string& uniqueId,
-            bool canAllocateHwcForVDS)
+    VirtualDisplayId acquireVirtualDisplay(ui::Size, ui::PixelFormat, const std::string& uniqueId)
             REQUIRES(mStateLock);
     template <typename ID>
     void acquireVirtualDisplaySnapshot(ID displayId, const std::string& uniqueId) {
@@ -1314,6 +1313,7 @@ private:
     std::atomic_bool mForceFullDamage = false;
 
     bool mLayerCachingEnabled = false;
+    bool mPropagateBackpressure = true;
     bool mBackpressureGpuComposition = false;
 
     LayerTracing mLayerTracing;
