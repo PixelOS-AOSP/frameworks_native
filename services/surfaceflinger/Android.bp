@@ -48,15 +48,13 @@ cc_defaults {
         "libsurfaceflinger_common_deps",
         "surfaceflinger_defaults",
         "libsurfaceflinger_proto_deps",
+        "surfaceflinger_qcom_ext_defaults",
     ],
     cflags: [
         "-DLOG_TAG=\"SurfaceFlinger\"",
         "-DGL_GLEXT_PROTOTYPES",
         "-DEGL_EGLEXT_PROTOTYPES",
-    ] + select(soong_config_variable("qtidisplay", "headers_namespace"), {
-        any @ flag_val: ["-DQCOM_UM_FAMILY"],
-        default: [],
-    }),
+    ],
     shared_libs: [
         "android.hardware.configstore-utils",
         "android.hardware.configstore@1.0",
@@ -113,10 +111,7 @@ cc_defaults {
         "android.hardware.graphics.composer@2.3-command-buffer",
         "android.hardware.graphics.composer@2.4-command-buffer",
         "android.hardware.graphics.composer3-command-buffer",
-    ] + select(soong_config_variable("qtidisplay", "headers_namespace"), {
-        any @ flag_val: ["//" + flag_val + ":display_intf_headers"],
-        default: [],
-    }),
+    ],
     export_static_lib_headers: [
         "libcompositionengine",
         "librenderengine",
@@ -148,6 +143,7 @@ cc_defaults {
     },
     whole_program_vtables: true, // Requires ThinLTO
     afdo: true,
+    lto_Instr100: true,
     // TODO(b/131771163): Fix broken fuzzer support with LTO.
     sanitize: {
         fuzzer: false,
