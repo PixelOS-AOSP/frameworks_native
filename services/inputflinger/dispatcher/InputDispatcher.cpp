@@ -3290,7 +3290,6 @@ void InputDispatcher::pokeUserActivityLocked(const EventEntry& eventEntry) {
         }
     }
 
-    int32_t keyCode = AKEYCODE_UNKNOWN;
     switch (eventEntry.type) {
         case EventEntry::Type::MOTION: {
             const MotionEntry& motionEntry = static_cast<const MotionEntry&>(eventEntry);
@@ -3319,8 +3318,6 @@ void InputDispatcher::pokeUserActivityLocked(const EventEntry& eventEntry) {
                         << windowDisablingUserActivityInfo->name << "'.";
                 return;
             }
-
-            keyCode = keyEntry.keyCode;
             break;
         }
         default: {
@@ -3331,10 +3328,10 @@ void InputDispatcher::pokeUserActivityLocked(const EventEntry& eventEntry) {
     }
 
     mLastUserActivityTimes[eventType] = eventEntry.eventTime;
-    auto command = [this, eventTime = eventEntry.eventTime, eventType, displayId, keyCode]()
+    auto command = [this, eventTime = eventEntry.eventTime, eventType, displayId]()
                            REQUIRES(mLock) {
                                scoped_unlock unlock(mLock);
-                               mPolicy.pokeUserActivity(eventTime, eventType, displayId, keyCode);
+                               mPolicy.pokeUserActivity(eventTime, eventType, displayId);
                            };
     postCommandLocked(std::move(command));
 }
